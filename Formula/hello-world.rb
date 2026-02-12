@@ -5,6 +5,8 @@ class HelloWorld < Formula
   sha256 "e7780db4453235a88a7669e94a73bfa0ff44725f99e5e8f85b6e99b397ae6c37"
   license "MIT"
 
+  rebuild 1
+
   depends_on "cmake" => :build
 
   def install
