@@ -35,7 +35,9 @@ jobs:
 
       - run: brew test-bot --only-setup
 
-      - run: brew test-bot --only-tap-syntax
+      - name: Tap with explicit URL
+        run: brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
+      - run: brew test-bot --only-tap-syntax --tap brendan-nasa/hello-world
       - run: brew test-bot --only-formulae --tap brendan-nasa/hello-world
         if: github.event_name == 'pull_request'
 
