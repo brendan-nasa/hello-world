@@ -5,6 +5,11 @@ class HelloWorld < Formula
   sha256 "e7780db4453235a88a7669e94a73bfa0ff44725f99e5e8f85b6e99b397ae6c37"
   license "MIT"
 
+  bottle do
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_tahoe: "db7c6dac840376f09de1fcf9651d62f56f4181ec54973af02cef97985abe5125"
+  end
+
   depends_on "cmake" => :build
 
   def install
