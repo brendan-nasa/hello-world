@@ -43,6 +43,17 @@ jobs:
         run: brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
         if: github.event_name != 'pull_request'
       - run: brew test-bot --only-tap-syntax --tap brendan-nasa/hello-world
+
+      - name: Debug tap git state
+        run: |
+          TAP_PATH="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
+          echo "TAP_PATH: $TAP_PATH"
+          echo "HEAD: $(git -C "$TAP_PATH" rev-parse HEAD)"
+          echo "origin/main: $(git -C "$TAP_PATH" rev-parse origin/main)"
+          echo "branches: $(git -C "$TAP_PATH" branch -a)"
+          echo "remotes: $(git -C "$TAP_PATH" remote -v)"
+        if: github.event_name == 'pull_request'
+
       - name: Run formulae detect
         id: formulae-detect
         run: brew test-bot --only-formulae-detect --tap brendan-nasa/hello-world
