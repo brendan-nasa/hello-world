@@ -1,6 +1,6 @@
 name: publish bottles
 on:
-  pull_request_target:
+  workflow_dispatch:
     types:
       - labeled
 
