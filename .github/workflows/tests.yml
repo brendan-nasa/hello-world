@@ -1,14 +1,14 @@
-name: brew test-bot
+name: test and build bottles
+
 on:
-  push:
-    branches:
-      - main
   pull_request:
+
 jobs:
-  test-bot:
+  test:
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-15-intel, macos-26]
+        os: [macos-26, macos-15, macos-15-intel]
     runs-on: ${{ matrix.os }}
     permissions:
       actions: read
@@ -17,62 +17,46 @@ jobs:
       pull-requests: read
     steps:
       - name: Set up Homebrew
-        id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Cache Homebrew Bundler RubyGems
-        uses: actions/cache@v4
+
+      - name: Checkout PR
+        uses: actions/checkout@v4
         with:
-          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-          key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-          restore-keys: ${{ matrix.os }}-rubygems-
-      - run: brew test-bot --only-cleanup-before
-      - run: brew test-bot --only-setup
-      - name: Tap with explicit URL
-        run: |
-          brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
-          cd "$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
-          git fetch origin "+refs/heads/main:refs/remotes/origin/main"
-          git fetch origin "+refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/origin/pr-${{ github.event.pull_request.number }}"
-          git checkout -b "pr-${{ github.event.pull_request.number }}" "origin/pr-${{ github.event.pull_request.number }}"
-          echo "TAP HEAD: $(git rev-parse HEAD)"
-          echo "ORIGIN/MAIN: $(git rev-parse origin/main)"
-        if: github.event_name == 'pull_request'
-      - name: Tap with explicit URL (push)
-        run: brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
-        if: github.event_name != 'pull_request'
-      - run: brew test-bot --only-tap-syntax --tap brendan-nasa/hello-world
+          path: homebrew-hello-world
 
-      - name: Debug tap git state
+      - name: Tap with local checkout
         run: |
-          TAP_PATH="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
-          echo "TAP_PATH: $TAP_PATH"
-          echo "HEAD: $(git -C "$TAP_PATH" rev-parse HEAD)"
-          echo "origin/main: $(git -C "$TAP_PATH" rev-parse origin/main)"
-          echo "branches: $(git -C "$TAP_PATH" branch -a)"
-          echo "remotes: $(git -C "$TAP_PATH" remote -v)"
-        if: github.event_name == 'pull_request'
+          # Point the tap at our PR checkout so the formula reflects PR changes
+          TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
+          mkdir -p "$(dirname "$TAP_DIR")"
+          ln -sf "$GITHUB_WORKSPACE/homebrew-hello-world" "$TAP_DIR"
+          brew tap brendan-nasa/hello-world
 
-      - name: Run formulae detect
-        id: formulae-detect
-        run: brew test-bot --only-formulae-detect --tap brendan-nasa/hello-world
-        if: github.event_name == 'pull_request'
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
-          GITHUB_REPOSITORY: brendan-nasa/hello-world
-      - name: Run formulae tests
-        run: >
-          brew test-bot --only-formulae --tap brendan-nasa/hello-world
-          --testing-formulae=${{ steps.formulae-detect.outputs.testing_formulae }}
-          --added-formulae=${{ steps.formulae-detect.outputs.added_formulae }}
-          --deleted-formulae=${{ steps.formulae-detect.outputs.deleted_formulae }}
-        if: github.event_name == 'pull_request' && steps.formulae-detect.outputs.testing_formulae != ''
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
-          GITHUB_REPOSITORY: brendan-nasa/hello-world
+      - name: Install dependencies
+        run: brew install --only-dependencies --build-from-source brendan-nasa/hello-world/hello-world
+
+      - name: Install formula
+        run: brew install --build-bottle --build-from-source brendan-nasa/hello-world/hello-world
+
+      - name: Run brew test
+        run: brew test brendan-nasa/hello-world/hello-world
+
+      - name: Run brew audit
+        run: brew audit --formula --strict brendan-nasa/hello-world/hello-world
+
+      - name: Run brew style
+        run: brew style brendan-nasa/hello-world/hello-world
+
+      - name: Build bottle
+        run: |
+          VERSION="$(brew info --json brendan-nasa/hello-world/hello-world | jq -r '.[0].versions.stable')"
+          brew bottle \
+            --json \
+            --root-url "https://github.com/brendan-nasa/hello-world/releases/download/hello-world-${VERSION}" \
+            brendan-nasa/hello-world/hello-world
+
       - name: Upload bottles as artifact
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
