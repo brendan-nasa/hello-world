@@ -1,12 +1,11 @@
-name: brew pr-pull
-
+name: publish bottles
 on:
   pull_request_target:
     types:
       - labeled
 
 jobs:
-  pr-pull:
+  publish:
     if: contains(github.event.pull_request.labels.*.name, 'pr-pull')
     runs-on: ubuntu-22.04
     permissions:
@@ -24,19 +23,78 @@ jobs:
       - name: Set up git
         uses: Homebrew/actions/git-user-config@main
 
-      - name: Pull bottles
+      - name: Tap and checkout PR branch
+        run: |
+          brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
+          TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
+          cd "$TAP_DIR"
+          PR="${{ github.event.pull_request.number }}"
+          git fetch origin "+refs/pull/${PR}/head:refs/remotes/origin/pr-${PR}"
+          git checkout -b "pr-${PR}" "origin/pr-${PR}"
+
+      - name: Find test workflow run ID
+        id: find-run
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST: ${{ github.event.pull_request.number }}
-        run: brew pr-pull --debug --tap="$GITHUB_REPOSITORY" "$PULL_REQUEST"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          RUN_ID="$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow test.yml \
+            --branch "$PR_BRANCH" \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            -q '.[0].databaseId')"
+          echo "run-id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Download bottle artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for os in macos-26 macos-15 macos-15-intel; do
+            gh run download "${{ steps.find-run.outputs.run-id }}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --name "bottles_${os}" \
+              --dir ./bottles
+          done
+
+      - name: Get latest release info
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
+          echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "url=${RELEASE_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload bottles to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.release.outputs.tag }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber \
+            bottles/*.bottle.tar.gz
+
+      - name: Merge bottle block into formula
+        env:
+          ROOT_URL: ${{ steps.release.outputs.url }}
+        run: |
+          brew bottle --merge --write --no-commit \
+            --root-url="$ROOT_URL" \
+            bottles/*.bottle.json
 
       - name: Push commits
         uses: Homebrew/actions/git-try-push@main
         with:
+          directory: /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/brendan-nasa/homebrew-hello-world
           branch: main
 
       - name: Delete branch
         if: github.event.pull_request.head.repo.fork == false
         env:
           BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: git push --delete origin "$BRANCH"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH"
