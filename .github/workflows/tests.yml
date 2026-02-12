@@ -38,7 +38,7 @@ jobs:
           brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
           cd "$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
           git fetch origin "+refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/origin/pr-${{ github.event.pull_request.number }}"
-          git checkout "origin/pr-${{ github.event.pull_request.number }}"
+          git checkout -b "pr-${{ github.event.pull_request.number }}" "origin/pr-${{ github.event.pull_request.number }}"
       - run: brew test-bot --only-tap-syntax --tap brendan-nasa/hello-world
       - run: brew test-bot --only-formulae --tap brendan-nasa/hello-world
         if: github.event_name == 'pull_request'
