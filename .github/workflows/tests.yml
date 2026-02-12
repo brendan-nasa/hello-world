@@ -17,23 +17,27 @@ jobs:
       pull-requests: read
     steps:
       - name: Set up Homebrew
+        id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Checkout PR
-        uses: actions/checkout@v4
+      - name: Cache Homebrew Bundler RubyGems
+        id: cache
+        uses: actions/cache@v3
         with:
-          path: homebrew-hello-world
-          persist-credentials: false
+          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+          key: ${{ runner.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: ${{ runner.os }}-rubygems-
 
-      - name: Tap with local checkout
-        run: |
-          # Point the tap at our PR checkout so the formula reflects PR changes
-          TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
-          mkdir -p "$(dirname "$TAP_DIR")"
-          ln -sf "$GITHUB_WORKSPACE/homebrew-hello-world" "$TAP_DIR"
-          brew tap brendan-nasa/hello-world
+      - name: Install Homebrew Bundler RubyGems
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: brew install-bundler-gems
+
+      - name: Checkout PR branch in tap
+              run: |
+                TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
+                cd "$TAP_DIR"
+                git fetch origin "+refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/origin/pr-${{ github.event.pull_request.number }}"
+                git checkout -b "pr-${{ github.event.pull_request.number }}" "origin/pr-${{ github.event.pull_request.number }}"
 
       - name: Install dependencies
         run: brew install --only-dependencies --build-from-source brendan-nasa/hello-world/hello-world
