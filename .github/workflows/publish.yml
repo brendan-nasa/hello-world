@@ -73,10 +73,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ steps.release.outputs.tag }}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --clobber \
-            bottles/**/*.bottle.tar.gz
+          shopt -s globstar nullglob
+
+          files=(bottles/**/*.bottle.tar.gz)
+
+          if (( ${#files[@]} )); then
+            gh release upload "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber \
+              "${files[@]}"
+          else
+            echo "No bottles found"
+          fi
 
       - name: Merge bottle block into formula
         env:
