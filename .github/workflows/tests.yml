@@ -42,6 +42,10 @@ jobs:
       - run: brew test-bot --only-tap-syntax --tap brendan-nasa/hello-world
       - run: brew test-bot --only-formulae --tap brendan-nasa/hello-world
         if: github.event_name == 'pull_request'
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_REPOSITORY: brendan-nasa/hello-world
 
       - name: Upload bottles as artifact
         if: always() && github.event_name == 'pull_request'
