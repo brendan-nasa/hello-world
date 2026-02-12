@@ -37,18 +37,12 @@ jobs:
         run: |
           brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
           cd "$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
+          git fetch origin "+refs/heads/main:refs/remotes/origin/main"
           git fetch origin "+refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/origin/pr-${{ github.event.pull_request.number }}"
           git checkout -b "pr-${{ github.event.pull_request.number }}" "origin/pr-${{ github.event.pull_request.number }}"
+          echo "TAP HEAD: $(git rev-parse HEAD)"
+          echo "ORIGIN/MAIN: $(git rev-parse origin/main)"
       - run: brew test-bot --only-tap-syntax --tap brendan-nasa/hello-world
-      - name: Debug env
-        run: |
-          echo "GITHUB_BASE_REF: $GITHUB_BASE_REF"
-          echo "GITHUB_SHA: $GITHUB_SHA"
-          echo "GITHUB_REF: $GITHUB_REF"
-          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
-          echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
-        if: github.event_name == 'pull_request'
-
       - run: brew test-bot --only-formulae --tap brendan-nasa/hello-world
         if: github.event_name == 'pull_request'
         env:
