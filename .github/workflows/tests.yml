@@ -1,8 +1,6 @@
 name: test and build bottles
-
 on:
   pull_request:
-
 jobs:
   test:
     strategy:
@@ -27,13 +25,14 @@ jobs:
           key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
           restore-keys: ${{ matrix.os }}-rubygems-
 
-      - name: Checkout PR branch in tap
+      - name: Tap and checkout PR branch
         run: |
+          brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
           TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
           cd "$TAP_DIR"
-          git fetch origin "+refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/origin/pr-${{ github.event.pull_request.number }}"
-          git checkout -b "pr-${{ github.event.pull_request.number }}" "origin/pr-${{ github.event.pull_request.number }}"
-
+          PR="${{ github.event.pull_request.number }}"
+          git fetch origin "+refs/pull/${PR}/head:refs/remotes/origin/pr-${PR}"
+          git checkout -b "pr-${PR}" "origin/pr-${PR}"
       - name: Install dependencies
         run: brew install --only-dependencies --build-from-source brendan-nasa/hello-world/hello-world
 
@@ -58,7 +57,7 @@ jobs:
             brendan-nasa/hello-world/hello-world
 
       - name: Upload bottles as artifact
-        if: always() && github.event_name == 'pull_request'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bottles_${{ matrix.os }}
