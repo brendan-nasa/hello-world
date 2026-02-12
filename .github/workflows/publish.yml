@@ -76,7 +76,7 @@ jobs:
           gh release upload "${{ steps.release.outputs.tag }}" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber \
-            bottles/*.bottle.tar.gz
+            bottles/**/*.bottle.tar.gz
 
       - name: Merge bottle block into formula
         env:
