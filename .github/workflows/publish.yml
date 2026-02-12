@@ -40,7 +40,7 @@ jobs:
         run: |
           RUN_ID="$(gh run list \
             --repo "$GITHUB_REPOSITORY" \
-            --workflow test.yml \
+            --workflow "brew test-bot" \
             --branch "$PR_BRANCH" \
             --status success \
             --limit 1 \
@@ -76,7 +76,7 @@ jobs:
           gh release upload "${{ steps.release.outputs.tag }}" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber \
-            bottles/*.bottle.tar.gz
+            bottles/**/*.bottle.tar.gz
 
       - name: Merge bottle block into formula
         env:
