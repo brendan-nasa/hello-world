@@ -6,6 +6,7 @@ class HelloWorld < Formula
   license "MIT"
 
   bottle do
+    root_url "https://github.com/brendan-nasa/hello-world/releases/download/v0.2"
     rebuild 1
     sha256 cellar: :any_skip_relocation, arm64_tahoe: "db7c6dac840376f09de1fcf9651d62f56f4181ec54973af02cef97985abe5125"
   end
