@@ -37,7 +37,7 @@ jobs:
         run: brew install --only-dependencies --build-from-source brendan-nasa/hello-world/hello-world
 
       - name: Install formula
-        run: brew install --build-bottle --build-from-source brendan-nasa/hello-world/hello-world
+        run: brew install --build-bottle brendan-nasa/hello-world/hello-world
 
       - name: Run brew test
         run: brew test brendan-nasa/hello-world/hello-world
