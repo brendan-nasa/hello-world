@@ -14,6 +14,7 @@ jobs:
       contents: write
       issues: read
       pull-requests: write
+
     steps:
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@main
@@ -52,12 +53,28 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "===== DEBUG: BEFORE DOWNLOAD ====="
+          pwd
+          ls -R || true
+
           for os in macos-26 macos-15 macos-15-intel; do
+            echo "Downloading artifact: bottles_${os}"
             gh run download "${{ steps.find-run.outputs.run-id }}" \
               --repo "$GITHUB_REPOSITORY" \
               --name "bottles_${os}" \
               --dir ./bottles
           done
+
+          echo "===== DEBUG: AFTER DOWNLOAD ====="
+          pwd
+          echo "Directory tree:"
+          ls -R bottles || true
+
+          echo "Find tarballs:"
+          find bottles -type f -name '*.tar.gz' -print || true
+
+          echo "Find bottle json:"
+          find bottles -type f -name '*.bottle.json' -print || true
 
       - name: Get latest release info
         id: release
@@ -73,7 +90,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "===== DEBUG: BEFORE UPLOAD ====="
+          pwd
+          ls -R bottles || true
+
           shopt -s globstar nullglob
+
+          echo "===== DEBUG: GLOB EXPANSION ====="
+          files=(bottles/**/*.tar.gz)
+
+          echo "Matched file count: ${#files[@]}"
+
+          for f in "${files[@]}"; do
+            echo "MATCHED: $f"
+          done
+
+          echo "===== RUNNING UPLOAD ====="
           gh release upload "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber \
@@ -83,6 +115,10 @@ jobs:
         env:
           ROOT_URL: ${{ steps.release.outputs.url }}
         run: |
+          echo "===== DEBUG: MERGE STEP ====="
+          pwd
+          ls -R bottles || true
+
           brew bottle --merge --write --no-commit \
             --root-url="$ROOT_URL" \
             bottles/*.bottle.json
