@@ -22,5 +22,5 @@ cmake --install build --prefix ~/.local
 ## Run
 
 ```bash
-./build/hello-world
+./build/hello
 ```
