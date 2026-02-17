@@ -41,7 +41,7 @@ jobs:
         run: |
           RUN_ID="$(gh run list \
             --repo "$GITHUB_REPOSITORY" \
-            --workflow "test and build bottles" \
+            --workflow "tests.yml" \
             --branch "$PR_BRANCH" \
             --status success \
             --limit 1 \
