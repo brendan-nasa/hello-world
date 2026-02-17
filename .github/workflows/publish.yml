@@ -76,20 +76,13 @@ jobs:
           echo "Find bottle json:"
           find bottles -type f -name '*.bottle.json' -print || true
 
-      - name: Get latest release info
-        id: release
+      - name: Upload bottles to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASE_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
           RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
-          echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "url=${RELEASE_URL}" >> "$GITHUB_OUTPUT"
-
-      - name: Upload bottles to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
+        
           echo "===== DEBUG: BEFORE UPLOAD ====="
           pwd
           ls -R bottles || true
