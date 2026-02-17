@@ -93,23 +93,45 @@ jobs:
           echo "===== DEBUG: BEFORE UPLOAD ====="
           pwd
           ls -R bottles || true
-
+      
+          echo
+          echo "===== DEBUG: RELEASE TAG VALUE ====="
+          echo "RELEASE_TAG='$RELEASE_TAG'"
+          echo "GITHUB_REPOSITORY='$GITHUB_REPOSITORY'"
+      
+          echo
+          echo "===== DEBUG: LIST ALL RELEASES ====="
+          gh release list --repo "$GITHUB_REPOSITORY" || true
+      
+          echo
+          echo "===== DEBUG: VIEW SELECTED RELEASE ====="
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" || echo "Release NOT found"
+      
           shopt -s globstar nullglob
-
+      
+          echo
           echo "===== DEBUG: GLOB EXPANSION ====="
           files=(bottles/**/*.tar.gz)
-
+      
           echo "Matched file count: ${#files[@]}"
-
+      
           for f in "${files[@]}"; do
             echo "MATCHED: $f"
           done
-
+      
+          echo
           echo "===== RUNNING UPLOAD ====="
+      
+          if (( ${#files[@]} == 0 )); then
+            echo "ERROR: No bottle files matched"
+            exit 1
+          fi
+      
           gh release upload "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber \
-            bottles/**/*.tar.gz
+            "${files[@]}"
+
 
       - name: Merge bottle block into formula
         env:
