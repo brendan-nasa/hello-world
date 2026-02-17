@@ -14,6 +14,7 @@ jobs:
       contents: write
       issues: read
       pull-requests: write
+
     steps:
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@main
@@ -52,37 +53,85 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "===== DEBUG: BEFORE DOWNLOAD ====="
+          pwd
+          ls -R || true
+
           for os in macos-26 macos-15 macos-15-intel; do
+            echo "Downloading artifact: bottles_${os}"
             gh run download "${{ steps.find-run.outputs.run-id }}" \
               --repo "$GITHUB_REPOSITORY" \
               --name "bottles_${os}" \
               --dir ./bottles
           done
 
-      - name: Get latest release info
-        id: release
+          echo "===== DEBUG: AFTER DOWNLOAD ====="
+          pwd
+          echo "Directory tree:"
+          ls -R bottles || true
+
+          echo "Find tarballs:"
+          find bottles -type f -name '*.tar.gz' -print || true
+
+          echo "Find bottle json:"
+          find bottles -type f -name '*.bottle.json' -print || true
+
+      - name: Upload bottles to release
+        id: upload
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASE_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+          echo "release-tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
-          echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "url=${RELEASE_URL}" >> "$GITHUB_OUTPUT"
-
-      - name: Upload bottles to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ steps.release.outputs.tag }}" \
+        
+          echo "===== DEBUG: BEFORE UPLOAD ====="
+          pwd
+          ls -R bottles || true
+      
+          echo
+          echo "===== DEBUG: RELEASE TAG VALUE ====="
+          echo "RELEASE_TAG='$RELEASE_TAG'"
+          echo "GITHUB_REPOSITORY='$GITHUB_REPOSITORY'"
+      
+          echo
+          echo "===== DEBUG: LIST ALL RELEASES ====="
+          gh release list --repo "$GITHUB_REPOSITORY" || true
+      
+          echo
+          echo "===== DEBUG: VIEW SELECTED RELEASE ====="
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" || echo "Release NOT found"
+      
+          shopt -s globstar nullglob
+      
+          echo
+          echo "===== DEBUG: GLOB EXPANSION ====="
+          files=(bottles/**/*.tar.gz)
+      
+          echo "Matched file count: ${#files[@]}"
+      
+          for f in "${files[@]}"; do
+            echo "MATCHED: $f"
+          done
+      
+          echo
+          echo "===== RUNNING UPLOAD ====="
+      
+          if (( ${#files[@]} == 0 )); then
+            echo "ERROR: No bottle files matched"
+            exit 1
+          fi
+      
+          gh release upload "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber \
-            bottles/**/*.bottle.tar.gz
+            "${files[@]}"
 
       - name: Merge bottle block into formula
         env:
-          ROOT_URL: ${{ steps.release.outputs.url }}
+          ROOT_URL: "https://github.com/${{ github.repository }}/releases/download/${{ steps.upload.outputs.release-tag }}"
         run: |
-          brew bottle --merge --write --no-commit \
+          brew bottle --merge --write \
             --root-url="$ROOT_URL" \
             bottles/*.bottle.json
 
@@ -90,7 +139,8 @@ jobs:
         uses: Homebrew/actions/git-try-push@main
         with:
           directory: /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/brendan-nasa/homebrew-hello-world
-          branch: main
+          branch: pr-${{ github.event.pull_request.number }}
+          remote_branch: main
 
       - name: Delete branch
         if: github.event.pull_request.head.repo.fork == false
