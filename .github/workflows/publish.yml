@@ -77,10 +77,12 @@ jobs:
           find bottles -type f -name '*.bottle.json' -print || true
 
       - name: Upload bottles to release
+        id: upload
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASE_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+          echo "release-tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
         
           echo "===== DEBUG: BEFORE UPLOAD ====="
@@ -125,16 +127,11 @@ jobs:
             --clobber \
             "${files[@]}"
 
-
       - name: Merge bottle block into formula
         env:
-          ROOT_URL: ${{ steps.release.outputs.url }}
+          ROOT_URL: "https://github.com/${{ github.repository }}/releases/download/${{ steps.upload.outputs.release-tag }}"
         run: |
-          echo "===== DEBUG: MERGE STEP ====="
-          pwd
-          ls -R bottles || true
-
-          brew bottle --merge --write --no-commit \
+          brew bottle --merge --write \
             --root-url="$ROOT_URL" \
             bottles/*.bottle.json
 
@@ -142,7 +139,8 @@ jobs:
         uses: Homebrew/actions/git-try-push@main
         with:
           directory: /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/brendan-nasa/homebrew-hello-world
-          branch: main
+          branch: pr-${{ github.event.pull_request.number }}
+          remote_branch: main
 
       - name: Delete branch
         if: github.event.pull_request.head.repo.fork == false
