@@ -137,7 +137,7 @@ jobs:
           git pull origin main
           brew bottle --merge --write \
             --root-url="$ROOT_URL" \
-            bottles/*.bottle.json
+            "$GITHUB_WORKSPACE"/bottles/*.bottle.json
 
       - name: Push commits
         uses: Homebrew/actions/git-try-push@main
