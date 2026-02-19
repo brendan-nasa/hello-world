@@ -128,8 +128,6 @@ jobs:
             "${files[@]}"
 
       - name: Merge bottle block into formula
-        env:
-          ROOT_URL: "https://github.com/${{ github.repository }}/releases/download/${{ steps.upload.outputs.release-tag }}"
         run: |
           TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
           cd "$TAP_DIR"
@@ -138,7 +136,6 @@ jobs:
           PR="${{ github.event.pull_request.number }}"
           git merge --no-edit "origin/pr-${PR}"
           brew bottle --merge --write \
-            --root-url="$ROOT_URL" \
             "$GITHUB_WORKSPACE"/bottles/*.bottle.json
 
       - name: Push commits
