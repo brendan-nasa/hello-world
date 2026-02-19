@@ -4,10 +4,10 @@ on:
     branches:
       - main
     paths:
-      - 'Formula/**'
+      - "Formula/**"
   pull_request:
     paths:
-      - 'Formula/**'
+      - "Formula/**"
 jobs:
   test:
     strategy:
