@@ -8,9 +8,9 @@ class HelloWorld < Formula
 
   bottle do
     root_url "https://github.com/brendan-nasa/hello-world/releases/download/v0.4"
-    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "3c1ce939da53a92767737a3735e44e2532d9a5d4e40e8d33aa72b59f624400df"
-    sha256 cellar: :any_skip_relocation, arm64_sequoia: "f08f2e927cfb81dc43a53d4b1669e587c4a0872669deb9932401d861f9706512"
-    sha256 cellar: :any_skip_relocation, sequoia:       "2a50adc312dd9ac2fc9d7736faa1dff6e4f966de6a7dfe7fc82ccf82b44463c3"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "fa2175e0481200ccdb12857d4729711d6b65cd0380eae9b371511d85daab31e1"
+    sha256 cellar: :any_skip_relocation, arm64_sequoia: "ff1644f93873c0447474051b6e92f42e35de369176190f123fa9b6e3ad6a18e6"
+    sha256 cellar: :any_skip_relocation, sequoia:       "b33c1a926c3d92c404376b871a51a5f903cd902711c79254aeff3654dbc16293"
   end
 
   depends_on "cmake" => :build
