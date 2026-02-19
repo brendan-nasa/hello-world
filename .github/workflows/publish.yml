@@ -31,6 +31,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up git
+        uses: Homebrew/actions/git-user-config@main
+
       - name: Compute shared paths
         run: |
           TAP_DIR="${{ env.TAP_DIR_BASE }}/${{ env.REPO_OWNER }}/homebrew-${{ env.REPO_NAME }}"
