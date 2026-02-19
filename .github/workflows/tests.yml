@@ -60,7 +60,6 @@ jobs:
           VERSION="$(brew info --json brendan-nasa/hello-world/hello-world | jq -r '.[0].versions.stable')"
           brew bottle \
             --json \
-            --root-url "https://github.com/brendan-nasa/hello-world/releases/download/hello-world-${VERSION}" \
             brendan-nasa/hello-world/hello-world
 
       - name: Upload bottles as artifact
