@@ -135,6 +135,8 @@ jobs:
           cd "$TAP_DIR"
           git checkout main
           git pull origin main
+          PR="${{ github.event.pull_request.number }}"
+          git merge --no-edit "origin/pr-${PR}"
           brew bottle --merge --write \
             --root-url="$ROOT_URL" \
             "$GITHUB_WORKSPACE"/bottles/*.bottle.json
