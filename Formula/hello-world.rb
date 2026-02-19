@@ -4,7 +4,7 @@ class HelloWorld < Formula
   url "https://github.com/brendan-nasa/hello-world/archive/refs/tags/v0.4.tar.gz"
   sha256 "3658431c9b72f43f6bdb5ad8ddfff37a04d35ef08620b0813406cfbcbc438447"
   license "MIT"
-  revision 4
+  revision 5
 
   bottle do
     root_url "https://github.com/brendan-nasa/hello-world/releases/download/v0.4"
