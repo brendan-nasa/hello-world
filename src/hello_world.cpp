@@ -3,7 +3,7 @@
 
 void print_hello()
 {
-   std::cout << "Hello, MARS!" << std::endl;
+   std::cout << "Hello, Jupiter!" << std::endl;
 }
 
 int main()
