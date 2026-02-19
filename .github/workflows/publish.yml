@@ -1,8 +1,14 @@
 name: publish bottles
+
 on:
   pull_request_target:
     types:
       - labeled
+
+env:
+  REPO_OWNER: ${{ github.repository_owner }}
+  REPO_NAME: ${{ github.event.repository.name }}
+  TAP_DIR_BASE: /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps
 
 jobs:
   publish:
@@ -26,8 +32,8 @@ jobs:
 
       - name: Tap and checkout PR branch
         run: |
-          brew tap brendan-nasa/hello-world https://github.com/brendan-nasa/hello-world
-          TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
+          brew tap ${{ env.REPO_OWNER }}/${{ env.REPO_NAME }} https://github.com/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}
+          TAP_DIR="${{ env.TAP_DIR_BASE }}/${{ env.REPO_OWNER }}/homebrew-${{ env.REPO_NAME }}"
           cd "$TAP_DIR"
           PR="${{ github.event.pull_request.number }}"
           git fetch origin "+refs/pull/${PR}/head:refs/remotes/origin/pr-${PR}"
@@ -105,7 +111,7 @@ jobs:
 
       - name: Merge bottle block into formula
         run: |
-          TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
+          TAP_DIR="${{ env.TAP_DIR_BASE }}/${{ env.REPO_OWNER }}/homebrew-${{ env.REPO_NAME }}"
           cd "$TAP_DIR"
           git checkout main
           git pull origin main
@@ -117,7 +123,7 @@ jobs:
       - name: Push commits
         uses: Homebrew/actions/git-try-push@main
         with:
-          directory: /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/brendan-nasa/homebrew-hello-world
+          directory: ${{ env.TAP_DIR_BASE }}/${{ env.REPO_OWNER }}/homebrew-${{ env.REPO_NAME }}
           branch: main
 
       - name: Delete branch
