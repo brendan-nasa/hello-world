@@ -22,6 +22,6 @@ class HelloWorld < Formula
   end
 
   test do
-    assert_equal "Hello, MARS!\n", shell_output("#{bin}/hello")
+    assert_equal "Hello, JUPITER!\n", shell_output("#{bin}/hello")
   end
 end
