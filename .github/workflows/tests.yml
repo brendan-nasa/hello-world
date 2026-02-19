@@ -1,6 +1,13 @@
 name: test and build bottles
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Formula/**'
   pull_request:
+    paths:
+      - 'Formula/**'
 jobs:
   test:
     strategy:
