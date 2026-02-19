@@ -85,6 +85,27 @@ jobs:
           echo "After merge, tarball names are:"
           find "$GITHUB_WORKSPACE/bottles" -name '*.tar.gz'
 
+          echo "Fixing bottle filenames from JSON metadata"
+          
+          find bottles -name '*.bottle.json' | while read json; do
+            jq -r '
+              .[]?.bottle.tags[]? |
+              "\(.local_filename)|\(.filename)"
+            ' "$json" | while IFS="|" read local canonical; do
+          
+              src=$(find bottles -name "$local" -print -quit)
+          
+              if [[ -n "$src" ]]; then
+                dst="$(dirname "$src")/$canonical"
+                echo "Renaming:"
+                echo "  $src"
+                echo "  -> $dst"
+                mv "$src" "$dst"
+              fi
+          
+            done
+          done
+
       - name: Upload bottles to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
