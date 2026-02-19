@@ -4,7 +4,7 @@ class HelloWorld < Formula
   url "https://github.com/brendan-nasa/hello-world/archive/refs/tags/v0.4.tar.gz"
   sha256 "3658431c9b72f43f6bdb5ad8ddfff37a04d35ef08620b0813406cfbcbc438447"
   license "MIT"
-  revision 1
+  revision 2
 
   bottle do
     sha256 cellar: :any_skip_relocation, arm64_tahoe:   "a5f44ce94d052c0decdc596054e0fc650fc9220648a04b34c7925552608f2508"
