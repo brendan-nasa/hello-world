@@ -10,6 +10,8 @@ env:
   REPO_NAME: ${{ github.event.repository.name }}
   TAP_DIR_BASE: /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps
   PR_NUMBER: ${{ github.event.pull_request.number }}
+  BOTTLE_OS_LIST: macos-26 macos-15 macos-15-intel
+  PRIMARY_BRANCH: master
 
 jobs:
   publish:
@@ -68,7 +70,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for os in macos-26 macos-15 macos-15-intel; do
+          for os in ${{ env.BOTTLE_OS_LIST }}; do
             gh run download "${{ steps.find-run.outputs.run-id }}" \
               --repo "$GITHUB_REPOSITORY" \
               --name "bottles_${os}" \
@@ -108,8 +110,8 @@ jobs:
       - name: Merge bottle block into formula
         run: |
           cd "$TAP_DIR"
-          git checkout main
-          git pull origin main
+          git checkout ${{ env.PRIMARY_BRANCH }}
+          git pull origin ${{ env.PRIMARY_BRANCH }}
           git merge --no-edit "origin/pr-${{ env.PR_NUMBER }}"
           brew bottle --merge --write \
             "$GITHUB_WORKSPACE"/bottles/*.bottle.json
@@ -118,7 +120,7 @@ jobs:
         uses: Homebrew/actions/git-try-push@main
         with:
           directory: ${{ env.TAP_DIR }}
-          branch: main
+          branch: ${{ env.PRIMARY_BRANCH }}
 
       # ── Cleanup ──────────────────────────────────────────────────────────────
 
