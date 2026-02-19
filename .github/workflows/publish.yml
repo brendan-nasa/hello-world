@@ -47,54 +47,63 @@ jobs:
             --limit 1 \
             --json databaseId \
             -q '.[0].databaseId')"
+
+          echo "Found run id: $RUN_ID"
           echo "run-id=${RUN_ID}" >> "$GITHUB_OUTPUT"
 
       - name: Download bottle artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "===== DEBUG: BEFORE DOWNLOAD ====="
-          pwd
-          ls -R || true
-
           for os in macos-26 macos-15 macos-15-intel; do
-            echo "Downloading artifact: bottles_${os}"
             gh run download "${{ steps.find-run.outputs.run-id }}" \
               --repo "$GITHUB_REPOSITORY" \
               --name "bottles_${os}" \
               --dir ./bottles
           done
 
-          echo "===== DEBUG: AFTER DOWNLOAD ====="
-          pwd
-          echo "Directory tree:"
-          ls -R bottles || true
+          echo "Downloaded files:"
+          find bottles -type f -print
 
-          echo "Find tarballs:"
-          find bottles -type f -name '*.tar.gz' -print || true
+      - name: Merge bottle block into formula
+        run: |
+          TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
+          cd "$TAP_DIR"
 
-          echo "Find bottle json:"
-          find bottles -type f -name '*.bottle.json' -print || true
+          git checkout main
+          git pull origin main
+
+          PR="${{ github.event.pull_request.number }}"
+          git merge --no-edit "origin/pr-${PR}"
+
+          echo "Bottle JSON files:"
+          find "$GITHUB_WORKSPACE/bottles" -name '*.bottle.json'
+
+          brew bottle --merge --write \
+            "$GITHUB_WORKSPACE"/bottles/*.bottle.json
+
+          echo "After merge, tarball names are:"
+          find "$GITHUB_WORKSPACE/bottles" -name '*.tar.gz'
 
       - name: Upload bottles to release
-        id: upload
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
-          echo "release-tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Existing releases:"
+          gh release list --repo "$GITHUB_REPOSITORY"
 
-          # Rename local_filename (--) to filename (-) before uploading
-          find bottles -name '*--*' | while read f; do
-            renamed="${f/--/-}"
-            mv "$f" "$renamed"
-          done
+          RELEASE_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+
+          echo "Chosen release tag: $RELEASE_TAG"
 
           shopt -s globstar nullglob
           files=(bottles/**/*.tar.gz)
 
+          echo "Files to upload:"
+          printf '%s\n' "${files[@]}"
+
           if (( ${#files[@]} == 0 )); then
-            echo "ERROR: No bottle files matched"
+            echo "ERROR: No bottles found after merge"
             exit 1
           fi
 
@@ -102,17 +111,6 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --clobber \
             "${files[@]}"
-
-      - name: Merge bottle block into formula
-        run: |
-          TAP_DIR="$(brew --repository)/Library/Taps/brendan-nasa/homebrew-hello-world"
-          cd "$TAP_DIR"
-          git checkout main
-          git pull origin main
-          PR="${{ github.event.pull_request.number }}"
-          git merge --no-edit "origin/pr-${PR}"
-          brew bottle --merge --write \
-            "$GITHUB_WORKSPACE"/bottles/*.bottle.json
 
       - name: Push commits
         uses: Homebrew/actions/git-try-push@main
